@@ -7,7 +7,13 @@
 
 <div class="col-md-8">
     <div class="card">
-        <div class="card-header">Dashboard</div>
+        <div class="card-header">
+            Dashboard
+            <span class="offset-md-9">
+                <a href="{{route('create-users')}}" type="button" class="btn btn-secondary">Add User</a>
+            </span>
+        </div>
+
 
         <div class="card-body">
             @if (session('status'))
@@ -38,8 +44,15 @@
                             @endforeach
                         </td>
                         <td>
-                            <a type="button" class="btn btn-primary" href="{{ route('assign-role',$ud->id) }}">Add Roles</a>
-                            <button class="btn btn-danger">Delete</button>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <a type="button" class="btn btn-primary btn-sm" href="{{ route('assign-role',$ud->id) }}">Add Roles</a>
+                                <form action="{{ route('delete-user') }}" method="post">
+                                    @csrf
+                                    @method('delete')
+                                    <input type="hidden" value="{{$ud->id}}" name="id">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

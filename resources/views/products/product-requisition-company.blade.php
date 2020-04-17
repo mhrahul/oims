@@ -7,7 +7,7 @@
         <div class="card-header">
             Product Requisitions
             <span class="offset-md-6">
-            <a href="{{route('product-requisition-form')}}" type="button" class="btn btn-primary">New Requisition</a>
+                <a href="{{route('product-requisition-form')}}" type="button" class="btn btn-primary">New Requisition</a>
             </span>
         </div>
 
@@ -39,8 +39,15 @@
                         <td>{{$pd->quantity}} {{$pd->unit}}</td>
                         <td>{{$pd->supname}}</td>
                         <td>{{$pd->status}}</td>
-                        <td>
-                            <button class="btn btn-danger">Delete</button>
+                        <td>                            
+                            @if(auth()->user()->id == $pd->requiser)
+                            <form action="{{ route('product-requisition-delete') }}" method="post">
+                                @csrf
+                                @method('delete')
+                                <input type="hidden" value="{{$pd->id}}" name="id">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

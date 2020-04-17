@@ -18,6 +18,10 @@
             </div>
             @endif
 
+            @if($errors->any())
+            <div class="alert alert-danger" role="alert">{{$errors->first()}}</div>
+            @endif
+
             <table class="table">
                 <thead class="thead-dark">
                     <tr>
@@ -38,7 +42,20 @@
                         <td>{{$pd->unit}}</td>
                         <td>{{$pd->status}}</td>
                         <td>
-                            <button class="btn btn-danger">Delete</button>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <form action="{{ route('edit-product') }}" method="post">
+                                    @csrf
+                                    @method('post')
+                                    <input type="hidden" value="{{$pd->id}}" name="prodid">
+                                    <button type="submit" class="btn btn-warning btn-sm">Edit</button>
+                                </form>
+                                <form action="{{ route('delete-product') }}" method="post">
+                                    @csrf
+                                    @method('delete')
+                                    <input type="hidden" value="{{$pd->id}}" name="id">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

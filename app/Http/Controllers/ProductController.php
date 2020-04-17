@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\SupplierRequisition;
+use App\Models\CompanyReceive;
 use Validator;
 use DB;
 use Carbon\Carbon;
@@ -17,12 +18,12 @@ class ProductController extends Controller
     public function index()
     {
         $proddata = Product::get();
-        return view('products')->with('proddata', $proddata);
+        return view('products.products')->with('proddata', $proddata);
     }
 
     public function createProducts()
     {
-        return view('create-product');
+        return view('products.create-product');
     }
     public function createProductsProcess(Request $request)
     {
@@ -48,6 +49,62 @@ class ProductController extends Controller
         return redirect('products');
     }
 
+    public function editProduct(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'prodid' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+        $prodid = $request->input('prodid');
+        $data = Product::findOrFail($prodid);
+
+        return view('products.edit-product')->with('productdata', $data);
+    }
+
+    public function editProductsProcess(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pid' => 'required',
+            'sku' => 'required',
+            'proname' => 'required',
+            'unit' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $product = Product::findOrFail($request->input('pid'));
+        $product->sku = $request->input('sku');
+        $product->pname = $request->input('proname');
+        $product->unit = $request->input('unit');
+        $product->status = 1;
+        $product->save();
+
+        return redirect('products');
+    }
+
+    public function deleteProductsProcess(Request $request)
+    {
+        $id = $request->input('id');
+        $getResult = CompanyReceive::where('product_id', '=', $id)->get();
+
+        if ($getResult->isEmpty()) {
+            $del = Product::find($id);
+            $del->delete();
+            return redirect('products');
+        } else {
+            return back()->withErrors(['Product already have dependency']);
+        }
+    }
+
     public function companyProductDetails()
     {
         $proddata = DB::table('company_stocks')
@@ -64,12 +121,12 @@ class ProductController extends Controller
     public function productRecusitionCompany()
     {
         $data = DB::table('supplier_requisitions')
-            ->select('supplier_requisitions.id as id', 'products.sku as sku', 'products.pname as product_name', 'products.unit as unit', 'supplier_requisitions.quantity as quantity', 'users.name as supname', 'supplier_requisitions.status as status', 'supplier_requisitions.date as date')
+            ->select('supplier_requisitions.id as id', 'products.sku as sku', 'products.pname as product_name', 'products.unit as unit', 'supplier_requisitions.quantity as quantity', 'users.name as supname', 'supplier_requisitions.status as status', 'supplier_requisitions.date as date', 'supplier_requisitions.requiser_id as requiser')
             ->leftJoin('products', 'supplier_requisitions.product_id', '=', 'products.id')
             ->leftJoin('users', 'supplier_requisitions.supplier_id', '=', 'users.id')
             ->where('supplier_requisitions.status', '=', 'open')
             ->get();
-        return view('product-requisition-company')->with('proddata', $data);
+        return view('products.product-requisition-company')->with('proddata', $data);
     }
     public function createProductRecusition(Request $request)
     {
@@ -78,7 +135,7 @@ class ProductController extends Controller
 
         $data = array('supplierdata' => $supplierdata, 'proddata' => $productdata);
 
-        return view('create-product-requisition')->with($data);
+        return view('products.create-product-requisition')->with($data);
     }
 
     public function productRecusitionProcess(Request $request)
@@ -114,6 +171,23 @@ class ProductController extends Controller
         return redirect('product-requisition-company');
     }
 
+    public function deleteProductRecusition(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $preq = SupplierRequisition::findOrFail($request->input('id'));
+        $preq->delete();
+        return redirect('product-requisition-company');
+    }
+
     public function productRecusitionSupplier()
     {
         $uid = Auth::user()->id;
@@ -123,7 +197,7 @@ class ProductController extends Controller
             ->leftJoin('users', 'supplier_requisitions.requiser_id', '=', 'users.id')
             ->where('supplier_requisitions.supplier_id', '=', $uid)
             ->get();
-        return view('product-requisition-supplier')->with('proddata', $data);
+        return view('products.product-requisition-supplier')->with('proddata', $data);
     }
 
     public function productRecusitionCompleteProcess(Request $request)
@@ -153,6 +227,257 @@ class ProductController extends Controller
         $srdata->status = 'closed';
         $srdata->save();
 
-        return redirect('product-requisition-supplier');
+        return redirect('products.product-requisition-supplier');
+    }
+
+    public function companyReceives()
+    {
+        $receiveData = DB::table('company_receives')
+            ->select(
+                'company_receives.id as id',
+                'company_receives.chalan_no as chalan',
+                'company_receives.quantity as quantity',
+                'company_receives.rate as rate',
+                'company_receives.receiving_date as date',
+                'company_receives.remarks as remarks',
+                'products.pname as product_name',
+                'products.unit as unit',
+                'users.name as supname'
+            )
+            ->leftJoin('products', 'company_receives.product_id', '=', 'products.id')
+            ->leftJoin('users', 'company_receives.supplier_id', '=', 'users.id')
+            ->get();
+
+        $data = array('recivedata' => $receiveData);
+
+        return view('products.product-receives')->with($data);
+    }
+
+    public function createCompanyReceives()
+    {
+        $supplierdata = User::role('supplier')->get();
+        $productdata = Product::where('status', '=', 1)->get();
+
+        $data = array(
+            'supplierdata' => $supplierdata,
+            'proddata' => $productdata
+        );
+
+        return view('products.create-product-receives')->with($data);
+    }
+    public function companyReceivesProcess(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'receive_date' => 'required',
+            'supplier' => 'required',
+            'products' => 'required|array',
+            'quantity' => 'required|array'
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+
+        $rd = $request->input('receive_date');
+        $date = Carbon::parse($rd)->format('Y-m-d');
+
+        $supplier = $request->input('supplier');
+        $chalan = $request->input('chalan');
+        $proddata = $request->input('products');
+        $pqn = $request->input('quantity');
+        $rate = $request->input('rate');
+        $remarks = $request->input('remarks');
+
+        for ($i = 0; $i < count($proddata); $i++) {
+            $comreq = new CompanyReceive;
+            $comreq->chalan_no = $chalan[$i];
+            $comreq->supplier_id = $supplier;
+            $comreq->product_id = $proddata[$i];
+            $comreq->quantity = $pqn[$i];
+            $comreq->rate = $rate[$i];
+            $comreq->status = 0;
+            $comreq->receiving_date = $date;
+            $comreq->remarks = $remarks[$i];
+            $comreq->save();
+        }
+
+        return redirect('product-receives');
+    }
+
+    public function companyReceivesDelete(Request $request)
+    {
+        $id = $request->input('id');
+        $del = CompanyReceive::where('id', '=', $id)->delete();
+        return redirect('product-receives');
+    }
+
+    public function companyReceivesReport()
+    {
+
+        $supplierdata = User::role('supplier')->get();
+        $productdata = Product::where('status', '=', 1)->get();
+
+        $data = array(
+            'supplierdata' => $supplierdata,
+            'proddata' => $productdata,
+            'totalqn' => '',
+            'totalrate' => ''
+        );
+
+        return view('receive-reports')->with($data);
+    }
+
+    public function companyReceivesReportProcess(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'daterange' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $supplierdata = User::role('supplier')->get();
+        $productdata = Product::where('status', '=', 1)->get();
+
+        $date = explode(" - ", $request->input('daterange'));
+        $fromDate = Carbon::parse($date[0])->format('Y-m-d');
+        $toDate = Carbon::parse($date[1])->format('Y-m-d');
+
+        $product = $request->input('products');
+        $supplier = $request->input('suppliers');
+
+        // return response()->json([$toDate, $product, $supplier]);
+
+        if (!is_null($product) && !is_null($supplier)) {
+            $query = DB::table('company_receives')
+                ->select(
+                    'company_receives.id as id',
+                    'company_receives.chalan_no as chalan_no',
+                    'company_receives.quantity as quantity',
+                    'company_receives.rate as rate',
+                    'company_receives.receiving_date as date',
+                    'company_receives.remarks as remarks',
+                    'products.pname as pname',
+                    'products.unit as unit',
+                    'users.name as name'
+                )
+                ->leftJoin('products', 'company_receives.product_id', '=', 'products.id')
+                ->leftJoin('users', 'company_receives.supplier_id', '=', 'users.id')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->get();
+
+            $query2 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->sum('quantity');
+
+            $query3 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->sum('company_receives.rate');
+        } elseif (isset($product) && !isset($supplier)) {
+            $query = DB::table('company_receives')
+                ->select(
+                    'company_receives.id as id',
+                    'company_receives.chalan_no as chalan_no',
+                    'company_receives.quantity as quantity',
+                    'company_receives.rate as rate',
+                    'company_receives.receiving_date as date',
+                    'company_receives.remarks as remarks',
+                    'products.pname as pname',
+                    'products.unit as unit',
+                    'users.name as name'
+                )
+                ->leftJoin('products', 'company_receives.product_id', '=', 'products.id')
+                ->leftJoin('users', 'company_receives.supplier_id', '=', 'users.id')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->get();
+
+            $query2 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->sum('quantity');
+
+            $query3 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.product_id', '=', $product)
+                ->sum('rate');
+        } elseif (!isset($product) && isset($supplier)) {
+            $query = DB::table('company_receives')
+                ->select(
+                    'company_receives.id as id',
+                    'company_receives.chalan_no as chalan_no',
+                    'company_receives.quantity as quantity',
+                    'company_receives.rate as rate',
+                    'company_receives.receiving_date as date',
+                    'company_receives.remarks as remarks',
+                    'products.pname as pname',
+                    'products.unit as unit',
+                    'users.name as name'
+                )
+                ->leftJoin('products', 'company_receives.product_id', '=', 'products.id')
+                ->leftJoin('users', 'company_receives.supplier_id', '=', 'users.id')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->get();
+
+            $query2 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->sum('quantity');
+
+            $query3 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->where('company_receives.supplier_id', '=', $supplier)
+                ->sum('rate');
+        } else {
+            $query = DB::table('company_receives')
+                ->select(
+                    'company_receives.id as id',
+                    'company_receives.chalan_no as chalan_no',
+                    'company_receives.quantity as quantity',
+                    'company_receives.rate as rate',
+                    'company_receives.receiving_date as date',
+                    'company_receives.remarks as remarks',
+                    'products.pname as pname',
+                    'products.unit as unit',
+                    'users.name as name'
+                )
+                ->leftJoin('products', 'company_receives.product_id', '=', 'products.id')
+                ->leftJoin('users', 'company_receives.supplier_id', '=', 'users.id')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->get();
+
+            $query2 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->sum('quantity');
+
+            $query3 = DB::table('company_receives')
+                ->whereBetween('company_receives.receiving_date', array($fromDate, $toDate))
+                ->sum('rate');
+        }
+
+
+        $data = array(
+            'supplierdata' => $supplierdata,
+            'proddata' => $productdata,
+            'reportdata' => $query,
+            'totalqn' => $query2,
+            'totalrate' => $query3
+        );
+
+        return view('receive-reports')->with($data);
     }
 }

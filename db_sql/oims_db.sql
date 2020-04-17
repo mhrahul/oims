@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 17, 2020 at 09:33 PM
+-- Generation Time: Jan 28, 2020 at 04:38 PM
 -- Server version: 10.4.11-MariaDB
 -- PHP Version: 7.4.1
 
@@ -30,14 +30,23 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `company_receives` (
   `id` bigint(20) UNSIGNED NOT NULL,
+  `chalan_no` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `supplier_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
-  `quantity` double(10,2) NOT NULL,
+  `quantity` double(10,2) NOT NULL DEFAULT 0.00,
+  `rate` double(10,2) NOT NULL DEFAULT 0.00,
   `status` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `date` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `receiving_date` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `remarks` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `company_receives`
+--
+
+INSERT INTO `company_receives` (`id`, `chalan_no`, `supplier_id`, `product_id`, `quantity`, `rate`, `status`, `receiving_date`, `remarks`, `created_at`, `updated_at`) VALUES(1, '1255', 2, 1, 10.00, 45.63, '0', '2020-01-15', NULL, '2020-01-23 02:12:52', '2020-01-23 02:12:52');
 
 -- --------------------------------------------------------
 
@@ -383,7 +392,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `company_receives`
 --
 ALTER TABLE `company_receives`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `company_stocks`
