@@ -35,8 +35,8 @@ Route::group(['middleware' => ['auth', 'role:production']], function () {
     Route::post('/product-receives-process', 'ProductController@companyReceivesProcess')->name('product-receives-process');
     Route::delete('/product-receives-delete', 'ProductController@companyReceivesDelete')->name('product-receives-delete');
 
-    Route::get('/receives-report', 'ProductController@companyReceivesReport')->name('receives-report');
-    Route::post('/receives-report-process', 'ProductController@companyReceivesReportProcess')->name('receives-report-process');
+    Route::get('/receives-report', 'ReportController@companyReceivesReport')->name('receives-report');
+    Route::post('/receives-report-process', 'ReportController@companyReceivesReportProcess')->name('receives-report-process');
 });
 
 Route::group(['middleware' => ['auth', 'role:supplier']], function () {

@@ -33,6 +33,7 @@
             </div>
             @endif
 
+
             <form class="form-inline" method="post" action="{{ route('receives-report-process') }}">
                 @csrf
                 <div class="form-group mb-2">
@@ -41,7 +42,7 @@
                 </div>
                 <div class="form-group mx-sm-3 mb-2">
                     <label for="products" class="sr-only">Products</label>
-                    <select class="custom-select form-control form-control-sm product_list" name="products">
+                    <select class="custom-select form-control form-control-sm product_list" name="products" value="{{ old('products') }}">
                         <option value="" selected>Choose Products</option>
                         @foreach($proddata as $pd)
                         <option value="{{$pd->id}}">{{$pd->pname}}</option>
@@ -50,14 +51,17 @@
                 </div>
                 <div class="form-group mx-sm-3 mb-2">
                     <label for="suppliers" class="sr-only">Suppliers</label>
-                    <select class="custom-select form-control form-control-sm product_list" name="suppliers">
+                    <select class="custom-select form-control form-control-sm product_list" name="suppliers" value="{{ old('suppliers') }}">
                         <option value="" selected>Choose Suppliers</option>
                         @foreach($supplierdata as $sd)
                         <option value="{{$sd->id}}">{{$sd->name}}</option>
                         @endforeach
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary mb-2">Search</button>
+                <div class="form-group mx-sm-3 mb-2">                    
+                    <input class="form-control form-control-sm" type="text" name="chalan_no" placeholder="Chalan No" value="{{ old('chalan_no') }}"> 
+                </div>
+                <button type="submit" class="btn btn-primary btn-md mb-2">Search</button>
             </form>
             <div>
                 <ul>
@@ -65,7 +69,7 @@
                         Total Quantity: {{ $totalqn }}
                     </li>
                     <li>
-                        Total Rate: {{ $totalrate }}
+                        Total Rate: {{ $totalrate }} Tk
                     </li>
                 </ul>
             </div>
